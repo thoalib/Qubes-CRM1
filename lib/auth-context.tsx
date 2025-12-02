@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "./supabase"
+import { getDemoSession, demoSignOut } from "./demo-auth"
 
 type UserRole = "admin" | "employee"
 
