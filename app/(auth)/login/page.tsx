@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
-import { createBrowserClient } from "@supabase/ssr"
 import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase"
 
 export default function LoginPage() {
     const [email, setEmail] = useState("")
@@ -15,10 +15,7 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false)
 
     const [error, setError] = useState<string | null>(null)
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createClient()
     const router = useRouter()
 
     const handleLogin = async (e: React.FormEvent) => {
