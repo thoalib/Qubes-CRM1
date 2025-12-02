@@ -32,9 +32,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const getUser = async () => {
             try {
+                // Small delay to ensure cookies are set
+                await new Promise(resolve => setTimeout(resolve, 100))
+
                 // Check for demo session first
                 const demoSession = getDemoSession()
                 if (demoSession?.user) {
+                    console.log("Demo session found:", demoSession.user)
                     setUser(demoSession.user)
                     const userRole = demoSession.user.user_metadata?.role || 'employee'
                     setRole(userRole as UserRole)
