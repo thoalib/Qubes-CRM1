@@ -61,6 +61,16 @@ export default function LoginPage() {
                 </CardHeader>
                 <form onSubmit={handleLogin}>
                     <CardContent className="space-y-4">
+                        <div className="bg-blue-50 text-blue-700 p-3 rounded-md text-sm">
+                            <p className="font-semibold mb-1">Demo Mode</p>
+                            <p className="text-xs">Test accounts:</p>
+                            <ul className="text-xs mt-1 list-disc list-inside">
+                                <li>qubes.connect@gmail.com (Admin)</li>
+                                <li>admin@qubes.com (Admin)</li>
+                                <li>employee@qubes.com (Employee)</li>
+                            </ul>
+                            <p className="text-xs mt-1">Password: Qubes@321, Admin@123, or Employee@123</p>
+                        </div>
                         {error && (
                             <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
                                 {error}
