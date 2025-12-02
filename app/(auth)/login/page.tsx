@@ -10,8 +10,8 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase"
 
 export default function LoginPage() {
-    const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
+    const [email, setEmail] = useState("qubes.connect@gmail.com")
+    const [password, setPassword] = useState("Qubes@321")
     const [isLoading, setIsLoading] = useState(false)
 
     const [error, setError] = useState<string | null>(null)
