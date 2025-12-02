@@ -37,7 +37,13 @@ export default function LoginPage() {
             }
 
             console.log("Login successful, redirecting...", user)
+
+            // Wait a bit for cookie to be set, then refresh and redirect
+            await new Promise(resolve => setTimeout(resolve, 200))
             router.refresh()
+
+            // Use a small additional delay before push to ensure auth context is updated
+            await new Promise(resolve => setTimeout(resolve, 100))
             router.push('/')
         } catch (err: any) {
             const errorMessage = err?.message || "Failed to sign in"
