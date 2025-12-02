@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase"
+import { demoSignIn } from "@/lib/demo-auth"
 
 export default function LoginPage() {
     const [email, setEmail] = useState("qubes.connect@gmail.com")
@@ -15,7 +15,6 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false)
 
     const [error, setError] = useState<string | null>(null)
-    const supabase = createClient()
     const router = useRouter()
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -24,26 +23,24 @@ export default function LoginPage() {
         setError(null)
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: email.trim(),
-                password: password.trim(),
-            })
+            const { user, error: authError } = await demoSignIn(
+                email.trim(),
+                password.trim()
+            )
 
-            if (error) {
-                console.error('Auth error:', error)
-                throw new Error(error.message || "Authentication failed")
+            if (authError) {
+                throw new Error(authError)
             }
 
-            if (!data.session) {
-                throw new Error("No session created after login")
+            if (!user) {
+                throw new Error("Login failed")
             }
 
-            console.log("Login successful, redirecting...")
-            // Auth state change listener in AuthContext/Middleware will handle redirect
+            console.log("Login successful, redirecting...", user)
             router.refresh()
             router.push('/')
         } catch (err: any) {
-            const errorMessage = err?.message || err?.error_description || "Failed to sign in"
+            const errorMessage = err?.message || "Failed to sign in"
             console.error("Login error:", errorMessage)
             setError(errorMessage)
         } finally {
