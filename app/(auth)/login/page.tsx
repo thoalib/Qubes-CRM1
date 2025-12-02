@@ -24,20 +24,28 @@ export default function LoginPage() {
         setError(null)
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email.trim(),
+                password: password.trim(),
             })
 
             if (error) {
-                throw error
+                console.error('Auth error:', error)
+                throw new Error(error.message || "Authentication failed")
             }
 
+            if (!data.session) {
+                throw new Error("No session created after login")
+            }
+
+            console.log("Login successful, redirecting...")
             // Auth state change listener in AuthContext/Middleware will handle redirect
             router.refresh()
             router.push('/')
         } catch (err: any) {
-            setError(err.message || "Failed to sign in")
+            const errorMessage = err?.message || err?.error_description || "Failed to sign in"
+            console.error("Login error:", errorMessage)
+            setError(errorMessage)
         } finally {
             setIsLoading(false)
         }
