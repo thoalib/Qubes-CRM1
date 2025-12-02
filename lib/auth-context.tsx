@@ -32,7 +32,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const getUser = async () => {
             try {
-                // Get current user
+                // Check for demo session first
+                const demoSession = getDemoSession()
+                if (demoSession?.user) {
+                    setUser(demoSession.user)
+                    const userRole = demoSession.user.user_metadata?.role || 'employee'
+                    setRole(userRole as UserRole)
+                    setLoading(false)
+                    return
+                }
+
+                // Fall back to Supabase (when real credentials are set up)
                 const { data: { user } } = await supabase.auth.getUser()
 
                 if (user) {
@@ -57,35 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         getUser()
-
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
-                if (event === 'SIGNED_IN' && session?.user) {
-                    setUser(session.user)
-
-                    // Get role
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('role')
-                        .eq('id', session.user.id)
-                        .single()
-
-                    if (profile) {
-                        setRole(profile.role as UserRole)
-                    }
-                } else if (event === 'SIGNED_OUT') {
-                    setUser(null)
-                    setRole(null)
-                    router.push('/login')
-                }
-            }
-        )
-
-        return () => {
-            subscription.unsubscribe()
-        }
-    }, [supabase, router])
+    }, [])
 
     const signOut = async () => {
         await supabase.auth.signOut()
