@@ -50,7 +50,7 @@ export function CallLogForm({ leadId, leadName, trigger }: CallLogFormProps) {
     }
 
     return (
-        <Dialog open={open} onSetOpen={setOpen}>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 {trigger || (
                     <Button>
