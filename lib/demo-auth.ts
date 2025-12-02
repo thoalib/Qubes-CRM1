@@ -46,7 +46,7 @@ export async function demoSignIn(
     }
   }
 
-  // Store session in localStorage
+  // Store session in both localStorage and cookie
   const session = {
     user: {
       id: user.id,
@@ -58,7 +58,11 @@ export async function demoSignIn(
     expires_at: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
   }
 
-  localStorage.setItem("demo_session", JSON.stringify(session))
+  if (typeof window !== "undefined") {
+    localStorage.setItem("demo_session", JSON.stringify(session))
+    // Also set cookie for server-side access
+    document.cookie = `demo_session=${encodeURIComponent(JSON.stringify(session))}; path=/; max-age=${24 * 60 * 60}`
+  }
 
   return {
     user: {
@@ -71,7 +75,11 @@ export async function demoSignIn(
 }
 
 export async function demoSignOut(): Promise<void> {
-  localStorage.removeItem("demo_session")
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("demo_session")
+    // Clear cookie
+    document.cookie = "demo_session=; path=/; max-age=0"
+  }
 }
 
 export function getDemoSession() {
@@ -88,6 +96,28 @@ export function getDemoSession() {
       return null
     }
     return parsed
+  } catch {
+    return null
+  }
+}
+
+export function getDemoSessionFromCookie(cookieString: string | undefined) {
+  if (!cookieString) return null
+
+  try {
+    const cookies = cookieString.split(";")
+    const sessionCookie = cookies.find((c) => c.trim().startsWith("demo_session="))
+    if (!sessionCookie) return null
+
+    const sessionJson = decodeURIComponent(sessionCookie.split("=")[1])
+    const session = JSON.parse(sessionJson)
+
+    // Check if session expired
+    if (session.expires_at && session.expires_at < Date.now()) {
+      return null
+    }
+
+    return session
   } catch {
     return null
   }
