@@ -6,19 +6,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
-import { createBrowserClient } from "@supabase/ssr"
 import { useRouter } from "next/navigation"
+import { demoSignIn } from "@/lib/demo-auth"
 
 export default function LoginPage() {
-    const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
+    const [email, setEmail] = useState("qubes.connect@gmail.com")
+    const [password, setPassword] = useState("Qubes@321")
     const [isLoading, setIsLoading] = useState(false)
 
     const [error, setError] = useState<string | null>(null)
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
     const router = useRouter()
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -27,20 +23,32 @@ export default function LoginPage() {
         setError(null)
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            })
+            const { user, error: authError } = await demoSignIn(
+                email.trim(),
+                password.trim()
+            )
 
-            if (error) {
-                throw error
+            if (authError) {
+                throw new Error(authError)
             }
 
-            // Auth state change listener in AuthContext/Middleware will handle redirect
+            if (!user) {
+                throw new Error("Login failed")
+            }
+
+            console.log("Login successful, redirecting...", user)
+
+            // Wait a bit for cookie to be set, then refresh and redirect
+            await new Promise(resolve => setTimeout(resolve, 200))
             router.refresh()
+
+            // Use a small additional delay before push to ensure auth context is updated
+            await new Promise(resolve => setTimeout(resolve, 100))
             router.push('/')
         } catch (err: any) {
-            setError(err.message || "Failed to sign in")
+            const errorMessage = err?.message || "Failed to sign in"
+            console.error("Login error:", errorMessage)
+            setError(errorMessage)
         } finally {
             setIsLoading(false)
         }
@@ -59,6 +67,16 @@ export default function LoginPage() {
                 </CardHeader>
                 <form onSubmit={handleLogin}>
                     <CardContent className="space-y-4">
+                        <div className="bg-blue-50 text-blue-700 p-3 rounded-md text-sm">
+                            <p className="font-semibold mb-1">Demo Mode</p>
+                            <p className="text-xs">Test accounts:</p>
+                            <ul className="text-xs mt-1 list-disc list-inside">
+                                <li>qubes.connect@gmail.com (Admin)</li>
+                                <li>admin@qubes.com (Admin)</li>
+                                <li>employee@qubes.com (Employee)</li>
+                            </ul>
+                            <p className="text-xs mt-1">Password: Qubes@321, Admin@123, or Employee@123</p>
+                        </div>
                         {error && (
                             <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
                                 {error}

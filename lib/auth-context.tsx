@@ -1,8 +1,9 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from "react"
-import { createBrowserClient } from "@supabase/ssr"
 import { useRouter } from "next/navigation"
+import { createClient } from "./supabase"
+import { getDemoSession, demoSignOut } from "./demo-auth"
 
 type UserRole = "admin" | "employee"
 
@@ -26,15 +27,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true)
     const router = useRouter()
 
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createClient()
 
     useEffect(() => {
         const getUser = async () => {
             try {
-                // Get current user
+                // Small delay to ensure cookies are set
+                await new Promise(resolve => setTimeout(resolve, 100))
+
+                // Check for demo session first
+                const demoSession = getDemoSession()
+                if (demoSession?.user) {
+                    console.log("Demo session found:", demoSession.user)
+                    setUser(demoSession.user)
+                    const userRole = demoSession.user.user_metadata?.role || 'employee'
+                    setRole(userRole as UserRole)
+                    setLoading(false)
+                    return
+                }
+
+                // Fall back to Supabase (when real credentials are set up)
                 const { data: { user } } = await supabase.auth.getUser()
 
                 if (user) {
@@ -59,38 +71,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         getUser()
-
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
-                if (event === 'SIGNED_IN' && session?.user) {
-                    setUser(session.user)
-
-                    // Get role
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('role')
-                        .eq('id', session.user.id)
-                        .single()
-
-                    if (profile) {
-                        setRole(profile.role as UserRole)
-                    }
-                } else if (event === 'SIGNED_OUT') {
-                    setUser(null)
-                    setRole(null)
-                    router.push('/login')
-                }
-            }
-        )
-
-        return () => {
-            subscription.unsubscribe()
-        }
-    }, [supabase, router])
+    }, [])
 
     const signOut = async () => {
-        await supabase.auth.signOut()
+        // Try demo sign out first
+        const demoSession = getDemoSession()
+        if (demoSession) {
+            await demoSignOut()
+        } else {
+            // Fall back to Supabase sign out
+            await supabase.auth.signOut()
+        }
+        setUser(null)
+        setRole(null)
         router.push('/login')
     }
 
@@ -102,9 +95,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useAuth = () => {
-    const context = useContext(AuthContext)
-    if (!context) {
-        throw new Error('useAuth must be used within AuthProvider')
+    try {
+        const context = useContext(AuthContext)
+        if (!context) {
+            return {
+                user: null,
+                role: null,
+                loading: true,
+                signOut: async () => { },
+            }
+        }
+        return context
+    } catch {
+        return {
+            user: null,
+            role: null,
+            loading: true,
+            signOut: async () => { },
+        }
     }
-    return context
 }
